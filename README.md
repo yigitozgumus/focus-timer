@@ -1,12 +1,12 @@
 # Focus Timer
 
-Cross-platform desktop application built with Kotlin Multiplatform and Jetpack Compose for Desktop. This application helps you maintain focus and productivity by providing a simple and elegant timer interface, inspired from a Chess Clock
+A cross-platform desktop application built using Kotlin Multiplatform and Jetpack Compose for Desktop. It helps you stay focused and productive with a clean, elegant timer interface inspired by a chess clock.
 
 ![](img/focus-timer.png)
 
 ## Idea
 
-I got inspired from this [tweet](https://x.com/Liv_Boeree/status/1901711876318204315), tried it and found it really useful. Instead of buying a clock, I decided to build a small app that would provide the same functionality.
+I got inspired from this [tweet](https://x.com/Liv_Boeree/status/1901711876318204315), tried the idea using a website and found it really useful. I decided to build a small app that would provide the same functionality.
 
 ## Features
 
