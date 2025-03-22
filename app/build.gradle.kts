@@ -18,6 +18,7 @@ kotlin {
                 implementation(compose.ui)
                 implementation(compose.components.resources)
                 implementation(compose.components.uiToolingPreview)
+                implementation(compose.preview)
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(libs.composeIcons.fontAwesome)
                 implementation(libs.lifecycle.viewmodel.compose)

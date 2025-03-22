@@ -1,157 +1,112 @@
 package com.yigitozgumus.timer
 
-import ControlButton
-import ControlPanel
+import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import compose.icons.LineAwesomeIcons
-import compose.icons.lineawesomeicons.PauseCircle
-import compose.icons.lineawesomeicons.PlayCircle
-import compose.icons.lineawesomeicons.StopCircle
-import compose.icons.lineawesomeicons.SyncSolid
-import kotlinx.coroutines.delay
-import kotlin.math.max
+import com.yigitozgumus.timer.components.ControlButtonsRow
+import com.yigitozgumus.timer.components.TimerColumn
+import com.yigitozgumus.timer.components.TimerConfigurationRow
 
 @Composable
 fun TimerApp() {
     val viewModel = TimerViewModel()
-    FocusTimerScreen(viewModel)
+    MaterialTheme(colorScheme = lightColorScheme()) {
+        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+            Box(
+                modifier =
+                    Modifier.fillMaxSize()
+                        .background(
+                            brush =
+                                Brush.verticalGradient(
+                                    colors =
+                                        listOf(
+                                            Color(0xFFF5F5F5),
+                                            Color(0xFFE0E0E0)
+                                        )
+                                )
+                        )
+            ) { FocusTimerScreen(viewModel) }
+        }
+    }
 }
 
 @Composable
 fun FocusTimerScreen(viewModel: TimerViewModel) {
-    val playerOneTime by viewModel.playerOneTime.collectAsState()
-    val playerTwoTime by viewModel.playerTwoTime.collectAsState()
-    val playerOneResetTime by viewModel.playerOneResetTime.collectAsState()
-    val playerTwoResetTime by viewModel.playerTwoResetTime.collectAsState()
-    val isPlayerOneTurn by viewModel.isPlayerOneTurn.collectAsState()
+    val firstTimerState by viewModel.firstTimerState.collectAsState()
+    val secondTimerState by viewModel.secondTimerState.collectAsState()
     val hasStarted by viewModel.hasStarted.collectAsState()
-    val areControlButtonsEnabled by viewModel.areControlButtonsEnabled.collectAsState()
+    val minuteConfiguration by viewModel.minuteConfig.collectAsState()
 
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().padding(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.SpaceBetween
     ) {
-        ControlButtonsRow(
+        TimerConfigurationRow(
             modifier = Modifier,
-            onPlay = { viewModel.play() },
-            onPause = { viewModel.pause() },
-            onReset = { viewModel.reset() },
-            onStop = { viewModel.stop() }
+            minuteConfiguration = minuteConfiguration,
+            hasStarted = hasStarted,
+            onChange = { isPlayerOne, delta -> viewModel.changeTime(isPlayerOne, delta) }
         )
+        // Timer section
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceAround
-        ) {
-            Text(
-                text = "Focused Work",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color.DarkGray
-            )
-            Text(
-                text = "Shallow Work",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color.DarkGray
-            )
-        }
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(vertical = 16.dp),
-            horizontalArrangement = Arrangement.SpaceAround,
+            modifier = Modifier.weight(0.8f).fillMaxWidth().padding(vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             TimerColumn(
                 modifier = Modifier.weight(1f),
-                time = playerOneTime,
-                areControlButtonsEnabled = areControlButtonsEnabled,
-                isActive = hasStarted && isPlayerOneTurn,
-                onTimerClick = { viewModel.handleTimerClick(isPlayerOne = true) },
-                onChangeTime = { delta -> viewModel.changeTime(isPlayerOne = true, delta = delta) },
-                progress = playerOneTime / playerOneResetTime.toFloat()
+                state = firstTimerState,
+                onTimerClick = { viewModel.handleTimerClick(isPlayerOne = true) }
             )
 
             TimerColumn(
-                modifier = Modifier.fillMaxHeight().weight(1f),
-                time = playerTwoTime,
-                isActive = hasStarted && !isPlayerOneTurn,
-                onTimerClick = { viewModel.handleTimerClick(isPlayerOne = false) },
-                onChangeTime = { delta -> viewModel.changeTime(isPlayerOne = false, delta = delta) },
-                progress = playerTwoTime / playerTwoResetTime.toFloat()
+                modifier = Modifier.weight(1f),
+                state = secondTimerState,
+                onTimerClick = { viewModel.handleTimerClick(isPlayerOne = false) }
+            )
+        }
+
+        // Control buttons section
+        Card(
+            modifier = Modifier.fillMaxWidth().height(100.dp).padding(top = 8.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White)
+        ) {
+            ControlButtonsRow(
+                modifier = Modifier.padding(12.dp),
+                onPlay = { viewModel.play() },
+                onPause = { viewModel.pause() },
+                onReset = { viewModel.reset() },
+                onStop = { viewModel.stop() }
             )
         }
     }
 }
 
+@Preview
 @Composable
-fun ControlButtonsRow(
-    modifier: Modifier = Modifier,
-    onPlay: () -> Unit,
-    onPause: () -> Unit,
-    onReset: () -> Unit,
-    onStop: () -> Unit
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly
-    ) {
-        ControlButton(image = LineAwesomeIcons.PlayCircle, shape = CircleShape, label = "Play") {
-            onPlay()
-        }
-        ControlButton(image = LineAwesomeIcons.PauseCircle, shape = CircleShape, label = "Pause") {
-            onPause()
-        }
-        ControlButton(image = LineAwesomeIcons.SyncSolid, shape = CircleShape, label = "Reset") {
-            onReset()
-        }
-        ControlButton(image = LineAwesomeIcons.StopCircle, shape = CircleShape, label = "Stop") {
-            onStop()
-        }
-    }
+private fun TimerAppPreview() {
+    TimerApp()
 }
 
+@Preview
 @Composable
-fun TimerColumn(
-    modifier: Modifier = Modifier,
-    time: Int,
-    areControlButtonsEnabled: Boolean = true,
-    isActive: Boolean,
-    progress: Float,
-    onTimerClick: () -> Unit,
-    onChangeTime: (Int) -> Unit
-) {
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Bottom
-    ) {
-        TimerButton(
-            time = time,
-            isActive = isActive,
-            onClick = onTimerClick,
-            modifier = Modifier.weight(1f),
-            progress = progress
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        ControlPanel(
-            modifier = Modifier,
-            onValueChange = onChangeTime,
-            areControlButtonsEnabled = areControlButtonsEnabled
-        )
-    }
+private fun FocusTimerScreenPreview() {
+    val viewModel = TimerViewModel()
+    FocusTimerScreen(viewModel)
 }
