@@ -8,18 +8,20 @@ on:
 jobs:
   build:
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         include:
           - os: ubuntu-latest
-            artifact_name: focus-timer.deb
+            artifact_name: deb
             package_task: packageDeb
           - os: windows-latest
-            artifact_name: focus-timer.msi
+            artifact_name: msi
             package_task: packageMsi
           - os: macos-latest
-            artifact_name: focus-timer.dmg
+            artifact_name: dmg
             package_task: packageDmg
 
     steps:
@@ -32,35 +34,36 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
+      - name: Make gradlew executable
+        if: runner.os != 'Windows'
+        run: chmod +x ./gradlew
+
       - name: Build and Package
         run: ./gradlew ${{ matrix.package_task }}
 
-      - name: Upload Artifact
+      - name: Find Package
+        id: find-package
+        shell: bash
+        run: |
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            echo "package_path=$(find app/build/compose/binaries -name "*.msi" -type f | head -n 1)" >> $GITHUB_OUTPUT
+          elif [ "${{ runner.os }}" == "macOS" ]; then
+            echo "package_path=$(find app/build/compose/binaries -name "*.dmg" -type f | head -n 1)" >> $GITHUB_OUTPUT
+          else
+            echo "package_path=$(find app/build/compose/binaries -name "*.deb" -type f | head -n 1)" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload Package
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact_name }}
-          path: app/build/compose/binaries/${{ matrix.package_task }}/Focus Timer-1.0.0.${{ matrix.artifact_name }}
-
-  release:
-    needs: build
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
-
-    steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: ./artifacts/
-          pattern: focus-timer.*
-          merge-archives: false
+          name: focus-timer-${{ matrix.artifact_name }}
+          path: ${{ steps.find-package.outputs.package_path }}
 
       - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         with:
-          files: |
-            ./artifacts/focus-timer.deb
-            ./artifacts/focus-timer.msi
-            ./artifacts/focus-timer.dmg
+          files: ${{ steps.find-package.outputs.package_path }}
           draft: false
           prerelease: false
         env:
