@@ -23,7 +23,17 @@ Cross-platform desktop application built with Kotlin Multiplatform and Jetpack C
 - Gradle 8.0 or later
 - Kotlin 1.9.0 or later
 
-## Building the Project
+## Installation
+
+### Pre-built Packages
+
+You can download the latest release from the [GitHub Releases](https://github.com/yigitozgumus/focus-timer/releases) page. The following packages are available:
+
+- Windows: `.msi` installer
+- macOS: `.dmg` disk image
+- Linux: `.deb` package
+
+### Building from Source
 
 1. Clone the repository:
 ```bash
@@ -67,6 +77,26 @@ focus-timer/
 ├── build.gradle.kts       # Project build configuration
 └── settings.gradle.kts    # Project settings
 ```
+
+## Development
+
+### Creating a Release
+
+1. Update the version in `app/build.gradle.kts`:
+```kotlin
+packageVersion = "1.0.0" // Update this version
+```
+
+2. Create and push a new tag:
+```bash
+git tag v1.0.0 # Use the same version as in build.gradle.kts
+git push origin v1.0.0
+```
+
+The GitHub Actions workflow will automatically:
+- Build packages for all platforms
+- Create a new release
+- Upload the packages to the release
 
 ## License
 
