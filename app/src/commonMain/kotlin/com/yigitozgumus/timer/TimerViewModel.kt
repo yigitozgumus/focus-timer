@@ -2,7 +2,9 @@ package com.yigitozgumus.timer
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.yigitozgumus.timer.domain.DesktopSoundPlayer
 import com.yigitozgumus.timer.domain.MinuteConfiguration
+import com.yigitozgumus.timer.domain.Settings
 import com.yigitozgumus.timer.domain.TimerState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
@@ -11,6 +13,11 @@ import kotlinx.coroutines.launch
 private const val defaultTime = 1800
 
 class TimerViewModel : ViewModel() {
+    private val soundPlayer = DesktopSoundPlayer()
+
+    private val _settings = MutableStateFlow(Settings())
+    val settings: StateFlow<Settings> = _settings.asStateFlow()
+
     private val _playerOneTime = MutableStateFlow(defaultTime)
     private val _playerTwoTime = MutableStateFlow(defaultTime)
     private val _playerOneResetTime = MutableStateFlow(defaultTime)
@@ -25,55 +32,53 @@ class TimerViewModel : ViewModel() {
     val hasStarted: StateFlow<Boolean> = _hasStarted.asStateFlow()
 
     val isTimerActive: StateFlow<Boolean> =
-            _hasStarted
-                    .combine(_wasPaused) { hasStarted, wasPaused ->
-                        if (hasStarted.not()) true else wasPaused.not()
-                    }
-                    .stateIn(viewModelScope, SharingStarted.Lazily, true)
+        _hasStarted
+            .combine(_wasPaused) { hasStarted, wasPaused ->
+                if (hasStarted.not()) true else wasPaused.not()
+            }
+            .stateIn(viewModelScope, SharingStarted.Lazily, true)
 
     val firstTimerState =
-            combine(_playerOneTime, _playerOneResetTime, _hasStarted, _isPlayerOneTurn) {
-                            playerOneTime,
-                            playerOneResetTime,
-                            hasStarted,
-                            isPlayerOneTurn ->
-                        TimerState.Started(
-                                label = getTimeLabel(playerOneTime),
-                                isActive = hasStarted && isPlayerOneTurn,
-                                isTimerActive = isTimerActive.value,
-                                progress = playerOneTime / playerOneResetTime.toFloat()
-                        )
-                    }
-                    .stateIn(
-                            viewModelScope,
-                            SharingStarted.Lazily,
-                            TimerState.NotStarted(
-                                    getTimeLabel(_playerOneTime.value),
-                                    isTimerActive.value
-                            )
-                    )
+        combine(_playerOneTime, _playerOneResetTime, _hasStarted, _isPlayerOneTurn) { playerOneTime,
+                                                                                      playerOneResetTime,
+                                                                                      hasStarted,
+                                                                                      isPlayerOneTurn ->
+            TimerState.Started(
+                label = getTimeLabel(playerOneTime),
+                isActive = hasStarted && isPlayerOneTurn,
+                isTimerActive = isTimerActive.value,
+                progress = playerOneTime / playerOneResetTime.toFloat()
+            )
+        }
+            .stateIn(
+                viewModelScope,
+                SharingStarted.Lazily,
+                TimerState.NotStarted(
+                    getTimeLabel(_playerOneTime.value),
+                    isTimerActive.value
+                )
+            )
 
     val secondTimerState =
-            combine(_playerTwoTime, _playerTwoResetTime, _hasStarted, _isPlayerOneTurn) {
-                            playerTwoTime,
-                            playerTwoResetTime,
-                            hasStarted,
-                            isPlayerOneTurn ->
-                        TimerState.Started(
-                                label = getTimeLabel(playerTwoTime),
-                                isActive = hasStarted && isPlayerOneTurn.not(),
-                                isTimerActive = isTimerActive.value,
-                                progress = playerTwoTime / playerTwoResetTime.toFloat()
-                        )
-                    }
-                    .stateIn(
-                            viewModelScope,
-                            SharingStarted.Lazily,
-                            TimerState.NotStarted(
-                                    getTimeLabel(_playerTwoTime.value),
-                                    isTimerActive.value
-                            )
-                    )
+        combine(_playerTwoTime, _playerTwoResetTime, _hasStarted, _isPlayerOneTurn) { playerTwoTime,
+                                                                                      playerTwoResetTime,
+                                                                                      hasStarted,
+                                                                                      isPlayerOneTurn ->
+            TimerState.Started(
+                label = getTimeLabel(playerTwoTime),
+                isActive = hasStarted && isPlayerOneTurn.not(),
+                isTimerActive = isTimerActive.value,
+                progress = playerTwoTime / playerTwoResetTime.toFloat()
+            )
+        }
+            .stateIn(
+                viewModelScope,
+                SharingStarted.Lazily,
+                TimerState.NotStarted(
+                    getTimeLabel(_playerTwoTime.value),
+                    isTimerActive.value
+                )
+            )
 
     private fun getTimeLabel(time: Int): String {
         return String.format("%d:%02d:%02d", time / 3600, (time % 3600) / 60, time % 60)
@@ -130,21 +135,25 @@ class TimerViewModel : ViewModel() {
         } else {
             _isPlayerOneTurn.value = !isPlayerOne
         }
+        if (_settings.value.isSoundEnabled) {
+            soundPlayer.playClickSound()
+        }
     }
 
     fun changeTime(isPlayerOne: Boolean, delta: String) {
         if (delta.isEmpty() || delta.toIntOrNull() == null || delta.toIntOrNull() == 0) return
         val currentDelta = delta.toIntOrNull() ?: return
         if (isPlayerOne) {
-           _minuteConfig.update { it.copy(focused = delta) }
+            _minuteConfig.update { it.copy(focused = delta) }
         } else {
-           _minuteConfig.update { it.copy(shallow = delta) }
+            _minuteConfig.update { it.copy(shallow = delta) }
         }
-        val change = if (isPlayerOne) {
-            currentDelta * 60 - _playerOneTime.value
-        } else {
-            currentDelta * 60 - _playerTwoTime.value
-        }
+        val change =
+            if (isPlayerOne) {
+                currentDelta * 60 - _playerOneTime.value
+            } else {
+                currentDelta * 60 - _playerTwoTime.value
+            }
         if (isPlayerOne) {
             val newTime = (_playerOneTime.value + change).coerceAtLeast(0)
             _playerOneTime.value = newTime
@@ -154,5 +163,9 @@ class TimerViewModel : ViewModel() {
             _playerTwoTime.value = newTime
             _playerTwoResetTime.value = newTime
         }
+    }
+
+    fun updateSettings(settings: Settings) {
+        _settings.value = settings
     }
 }

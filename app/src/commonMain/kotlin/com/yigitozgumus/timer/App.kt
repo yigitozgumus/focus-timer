@@ -4,26 +4,26 @@ import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.yigitozgumus.timer.components.ControlButtonsRow
+import com.yigitozgumus.timer.components.SettingsDialog
 import com.yigitozgumus.timer.components.TimerColumn
 import com.yigitozgumus.timer.components.TimerConfigurationRow
 
 @Composable
-fun TimerApp() {
-    val viewModel = TimerViewModel()
+fun TimerApp(
+    viewModel: TimerViewModel,
+    isSettingsVisible: Boolean,
+    toggleSettings: (Boolean) -> Unit
+) {
+    val settings by viewModel.settings.collectAsState()
+
     MaterialTheme(colorScheme = lightColorScheme()) {
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             Box(
@@ -41,6 +41,14 @@ fun TimerApp() {
                         )
             ) { FocusTimerScreen(viewModel) }
         }
+    }
+
+    if (isSettingsVisible) {
+        SettingsDialog(
+            settings = settings,
+            onDismiss = { toggleSettings(false) },
+            onSettingsChange = { viewModel.updateSettings(it) }
+        )
     }
 }
 
@@ -101,7 +109,7 @@ fun FocusTimerScreen(viewModel: TimerViewModel) {
 @Preview
 @Composable
 private fun TimerAppPreview() {
-    TimerApp()
+    TimerApp(TimerViewModel(), false, {})
 }
 
 @Preview
