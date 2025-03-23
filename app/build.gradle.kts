@@ -39,7 +39,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "Focus Timer"
-            packageVersion = "1.0.0"
+            packageVersion = libs.versions.focus.timer.get()
 
             macOS {
                 bundleID = "com.yigitozgumus.timer"
